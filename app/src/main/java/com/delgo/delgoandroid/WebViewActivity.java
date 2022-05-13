@@ -16,6 +16,8 @@ import android.provider.Settings;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.webkit.JsResult;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -46,6 +48,7 @@ public class WebViewActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_webview);
 
         webView = (WebView) findViewById(R.id.webview);
@@ -68,7 +71,7 @@ public class WebViewActivity extends AppCompatActivity {
 
         webView.getSettings().setDomStorageEnabled(true);
 
-        webView.loadUrl("49.50.161.156/test.jsp");
+        webView.loadUrl("http://49.50.161.156:8080");
     }
 
     @Override
