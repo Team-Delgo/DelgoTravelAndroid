@@ -40,8 +40,8 @@ public class WebViewActivity extends AppCompatActivity {
     private WebView webView = null;
     public ValueCallback<Uri> filePathCallbackNormal;
     public ValueCallback<Uri[]> filePathCallbackLollipop;
-    public final static int FILECHOOSER_NORMAL_REQ_CODE = 2001;
-    public final static int FILECHOOSER_LOLLIPOP_REQ_CODE = 2002;
+    public final static int FILE_CHOOSER_NORMAL_REQ_CODE = 2001;
+    public final static int FILE_CHOOSER_LOLLIPOP_REQ_CODE = 2002;
     private Uri cameraImageUri = null;
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -50,7 +50,7 @@ public class WebViewActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_webview);
 
-        webView = (WebView) findViewById(R.id.webview);
+        webView = (WebView) findViewById(R.id.webView);
 
         checkVerify();
 
@@ -64,11 +64,15 @@ public class WebViewActivity extends AppCompatActivity {
         webView.getSettings().setSupportZoom(false);
         webView.getSettings().setBuiltInZoomControls(false);
 
+        webView.getSettings().setLoadWithOverviewMode(true);
+
+        webView.getSettings().setAllowFileAccessFromFileURLs(true);
+
         webView.getSettings().setJavaScriptEnabled(true);
+        webView.getSettings().setDomStorageEnabled(true);
         webView.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
         webView.getSettings().setSupportMultipleWindows(true);
 
-        webView.getSettings().setDomStorageEnabled(true);
 
         webView.loadUrl("http://49.50.161.156:8080");
     }
@@ -154,7 +158,7 @@ public class WebViewActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
-            case FILECHOOSER_NORMAL_REQ_CODE:
+            case FILE_CHOOSER_NORMAL_REQ_CODE:
                 if (resultCode == RESULT_OK) {
                     if (filePathCallbackNormal == null) return;
                     Uri result = (data == null || resultCode != RESULT_OK) ? null : data.getData();
@@ -162,7 +166,7 @@ public class WebViewActivity extends AppCompatActivity {
                     filePathCallbackNormal = null;
                 }
                 break;
-            case FILECHOOSER_LOLLIPOP_REQ_CODE:
+            case FILE_CHOOSER_LOLLIPOP_REQ_CODE:
                 if (resultCode == RESULT_OK) {
                     if (filePathCallbackLollipop == null) return;
                     if (data == null)
@@ -218,9 +222,9 @@ public class WebViewActivity extends AppCompatActivity {
 
             // 카메라 intent 포함시키기..
             chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Parcelable[]{intentCamera});
-            startActivityForResult(chooserIntent, FILECHOOSER_LOLLIPOP_REQ_CODE);
+            startActivityForResult(chooserIntent, FILE_CHOOSER_LOLLIPOP_REQ_CODE);
         } else {// 바로 카메라 실행..
-            startActivityForResult(intentCamera, FILECHOOSER_LOLLIPOP_REQ_CODE);
+            startActivityForResult(intentCamera, FILE_CHOOSER_LOLLIPOP_REQ_CODE);
         }
     }
 
@@ -304,7 +308,7 @@ public class WebViewActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     findViewById(R.id.loading).setVisibility(View.GONE);
-                    findViewById(R.id.webview).setVisibility(View.VISIBLE);
+                    findViewById(R.id.webView).setVisibility(View.VISIBLE);
                 }
             }, 500);
         }
