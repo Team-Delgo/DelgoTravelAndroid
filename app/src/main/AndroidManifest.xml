@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.delgo.delgoandroid">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- 인터넷 -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- 네트워크 상태 -->
@@ -12,6 +11,7 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <!-- 외부저장소 사용 -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
     <application
         android:networkSecurityConfig="@xml/network_security_config"
         android:hardwareAccelerated="true"

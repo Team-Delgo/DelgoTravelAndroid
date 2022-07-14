@@ -77,7 +77,9 @@ public class WebViewActivity extends AppCompatActivity {
 //            webView.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 //        }
 
-        webView.loadUrl("http://49.50.161.156:8080");
+        webView.loadUrl("http://61.97.186.174");
+
+
     }
 
     @TargetApi(Build.VERSION_CODES.M)
@@ -269,13 +271,26 @@ public class WebViewActivity extends AppCompatActivity {
 //            return true;
 //        }
 //    }
-
+    // 리액트에서 window.BRIDGE.uploadPhoto() 호출
     class WebBridge {
         @JavascriptInterface
         public void testAndroid() {
             // 실행할 내용
         }
+        @JavascriptInterface
+        public void uploadPhoto(){
+            Intent intent = new Intent();
+            intent.setType("image/*");
+            intent.setAction(Intent.ACTION_GET_CONTENT);
+            startActivityForResult(intent, 0);
+        }
+        @JavascriptInterface
+        public void setNotify(){
+            Intent intent = new Intent(Settings.ACTION_APPLICATION_SETTINGS);
+            startActivity(intent);
+        }
     }
+
 
     class WebClient extends WebViewClient {
         @Override
@@ -285,7 +300,9 @@ public class WebViewActivity extends AppCompatActivity {
                 findViewById(R.id.loading).setVisibility(View.GONE);
                 findViewById(R.id.webView).setVisibility(View.VISIBLE);
             }, 500);
+
         }
+
     }
 
 }
