@@ -1,22 +1,32 @@
 package com.delgo.delgoandroid;
 
+import static android.content.Intent.ACTION_VIEW;
+
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.content.ActivityNotFoundException;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.provider.Settings;
-import android.view.KeyEvent;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.webkit.JavascriptInterface;
+import android.webkit.PermissionRequest;
+import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
-import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -25,16 +35,18 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-public class WebViewActivity extends AppCompatActivity {
-    // private final long TIME = 0;
-    private WebView webView = null;
-    public ValueCallback<Uri> filePathCallbackNormal;
-    public ValueCallback<Uri[]> filePathCallbackLollipop;
-    public final static int FILE_CHOOSER_NORMAL_REQ_CODE = 2001;
-    public final static int FILE_CHOOSER_LOLLIPOP_REQ_CODE = 2002;
-    private Uri CAMERA_IMAGE_URI = null;
+import java.net.URISyntaxException;
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
+public class WebViewActivity extends AppCompatActivity {
+    private final static int FILECHOOSER_NORMAL_REQ_CODE = 0;
+    private WebView webView = null;
+    private ValueCallback mFilePathCallback;
+    private PackageManager packageManager;
+    private long backBtnTime = 0;
+    private int vibrateTime = 100;
+    private int vibrateAmplitude = 30;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,47 +56,48 @@ public class WebViewActivity extends AppCompatActivity {
 
         checkVerify();
 
-        webView.setWebViewClient(new WebClient());
-        webView.setWebChromeClient(new WebChromeClient());
-
         webView.getSettings().setJavaScriptEnabled(true);
-
         webView.getSettings().setLoadWithOverviewMode(true);
         webView.getSettings().setUseWideViewPort(true);
-
         webView.getSettings().setSupportZoom(false);
         webView.getSettings().setBuiltInZoomControls(false);
-
         webView.getSettings().setAllowFileAccessFromFileURLs(true);
-
-
         webView.getSettings().setDomStorageEnabled(true);
         webView.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
         webView.getSettings().setSupportMultipleWindows(true);
+        webView.getSettings().setAllowFileAccess(true);
+        webView.getSettings().setAllowContentAccess(true);
+        webView.getSettings().setAppCacheEnabled(true);
+        webView.setWebContentsDebuggingEnabled(true);
+        webView.setWebViewClient(new WebClient());
+        webView.setWebChromeClient(new WebChromeClient());
+        webView.addJavascriptInterface(new WebAppInterface(), "BRIDGE");
 
-        webView.addJavascriptInterface(new WebBridge(), "BRIDGE");
+        webView.loadUrl("https://www.delgo.pet");
 
-//        if(Build.VERSION.SDK_INT >= 19) {
-//            webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-//        } else {
-//            webView.setLayerType(WebView.LAYER_TYPE_SOFTWARE, null);
-//        }
-//        getWindow().setFlags(
-//                WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
-//                WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
-//
-//        if(Build.VERSION.SDK_INT >= 21) {
-//            webView.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-//        }
+    }
 
-        webView.loadUrl("http://61.97.186.174");
-
-
+    @Override
+    public void onBackPressed() {
+        long curTime = System.currentTimeMillis();
+        long gapTime = curTime - backBtnTime;
+        if (webView.canGoBack()) {
+            webView.goBack();
+        } else if (0 <= gapTime && 2000 >= gapTime) {
+            super.onBackPressed();
+        } else {
+            backBtnTime = curTime;
+            Toast.makeText(this, R.string.on_back_pressed, Toast.LENGTH_SHORT).show();
+        }
+        if (webView.canGoBack()) {
+            webView.goBack();
+        } else {
+            Toast.makeText(this, R.string.on_back_pressed, Toast.LENGTH_SHORT).show();
+        }
     }
 
     @TargetApi(Build.VERSION_CODES.M)
     public void checkVerify() {
-
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(this, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
@@ -92,14 +105,14 @@ public class WebViewActivity extends AppCompatActivity {
                 ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             //카메라 또는 저장공간 권한 획득 여부 확인
             if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
-                new AlertDialog.Builder(this).setTitle("알림").setMessage("앱 이용을 위해선 권한 허용이 필요합니다.")
-                        .setPositiveButton("종료", (dialog, which) -> {
+                new AlertDialog.Builder(this).setTitle(R.string.alert).setMessage(R.string.allow_permission)
+                        .setPositiveButton(R.string.terminate, (dialog, which) -> {
                             dialog.dismiss();
                             finish();
-                        }).setNegativeButton("권한 설정", (dialog, which) -> {
+                        }).setNegativeButton(R.string.set_permission, (dialog, which) -> {
                             dialog.dismiss();
-                            Intent intent= new Intent(Settings.ACTION_SETTINGS);
-                            startActivityForResult(intent,0);
+                            Intent intent = new Intent(Settings.ACTION_APPLICATION_SETTINGS);
+                            startActivityForResult(intent, 0);
                         }).setCancelable(false).show();
             } else {
                 // 카메라 및 저장공간 권한 요청
@@ -120,11 +133,11 @@ public class WebViewActivity extends AppCompatActivity {
                 for (int grantResult : grantResults) {
                     if (grantResult == PackageManager.PERMISSION_DENIED) {
                         // 카메라, 저장소 중 하나라도 거부한다면 앱실행 불가 메세지 띄움
-                        new AlertDialog.Builder(this).setTitle("알림").setMessage("앱 이용을 위해선 권한 허용이 필요합니다.")
-                                .setPositiveButton("종료", (dialog, which) -> {
+                        new AlertDialog.Builder(this).setTitle(R.string.alert).setMessage(R.string.request_permission)
+                                .setPositiveButton(R.string.terminate, (dialog, which) -> {
                                     dialog.dismiss();
                                     finish();
-                                }).setNegativeButton("권한 설정", (dialog, which) -> {
+                                }).setNegativeButton(R.string.set_permission, (dialog, which) -> {
                                     dialog.dismiss();
                                     Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                                             .setData(Uri.parse("package:" + getApplicationContext().getPackageName()));
@@ -141,158 +154,188 @@ public class WebViewActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        switch (requestCode) {
-            case FILE_CHOOSER_NORMAL_REQ_CODE:
-                if (resultCode == RESULT_OK) {
-                    if (filePathCallbackNormal == null) return;
-                    Uri result = data == null ? null : data.getData();
-                    filePathCallbackNormal.onReceiveValue(result);
-                    filePathCallbackNormal = null;
-                }
-                break;
-            case FILE_CHOOSER_LOLLIPOP_REQ_CODE:
-                if (resultCode == RESULT_OK) {
-                    if (filePathCallbackLollipop == null) return;
-                    if (data == null)
-                        data = new Intent();
-                    if (data.getData() == null)
-                        data.setData(CAMERA_IMAGE_URI);
-
-                    filePathCallbackLollipop.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data));
-                    filePathCallbackLollipop = null;
-                } else {
-                    if (filePathCallbackLollipop != null) {
-
-                        filePathCallbackLollipop.onReceiveValue(null);
-                        filePathCallbackLollipop = null;
+        /* 파일 선택 완료 후 처리 */
+        switch(requestCode) {
+            case FILECHOOSER_NORMAL_REQ_CODE:
+                //fileChooser 로 파일 선택 후 onActivityResult 에서 결과를 받아 처리함
+                if(resultCode == RESULT_OK) {
+                    //파일 선택 완료 했을 경우
+                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        mFilePathCallback.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data));
+                    }else{
+                        mFilePathCallback.onReceiveValue(new Uri[]{data.getData()});
                     }
-
-                    if (filePathCallbackNormal != null) {
-                        filePathCallbackNormal.onReceiveValue(null);
-                        filePathCallbackNormal = null;
+                    mFilePathCallback = null;
+                } else {
+                    //cancel 했을 경우
+                    if(mFilePathCallback != null) {
+                        mFilePathCallback.onReceiveValue(null);
+                        mFilePathCallback = null;
                     }
                 }
                 break;
             default:
-
                 break;
         }
-
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-//    @SuppressLint("IntentReset")
-//    private void runCamera(boolean _isCapture) {
-//        Intent intentCamera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-//
-//        File path = Environment.getExternalStorageDirectory();
-//        File file = new File(path, "cam.png");
-//        // File 객체의 URI 를 얻는다.
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-//            String strpa = getApplicationContext().getPackageName();
-//            cameraImageUri = FileProvider.getUriForFile(this, strpa + ".fileprovider", file);
-//        } else {
-//            cameraImageUri = Uri.fromFile(file);
-//        }
-//        intentCamera.putExtra(MediaStore.EXTRA_OUTPUT, cameraImageUri);
-//
-//        if (!_isCapture) { // 선택팝업 카메라, 갤러리 둘다 띄우고 싶을 때
-//
-//            Intent pickIntent = new Intent(Intent.ACTION_PICK);
-//            pickIntent.setType(MediaStore.Images.Media.CONTENT_TYPE);
-//            pickIntent.setData(MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-//
-//            String pickTitle = "사진 가져오기";
-//            Intent chooserIntent = Intent.createChooser(pickIntent, pickTitle);
-//
-//            // 카메라 intent 포함시키기..
-//            chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Parcelable[]{intentCamera});
-//            startActivityForResult(chooserIntent, FILE_CHOOSER_LOLLIPOP_REQ_CODE);
-//        } else {// 바로 카메라 실행..
-//            startActivityForResult(intentCamera, FILE_CHOOSER_LOLLIPOP_REQ_CODE);
-//        }
-//    }
-
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-
-        if ((keyCode == KeyEvent.KEYCODE_BACK) && webView.canGoBack()) {
-            webView.goBack();
-            return true;
-        }
-        return super.onKeyDown(keyCode, event);
-    }
-
-//    private class WebChromeClientClass extends WebChromeClient {
-//        // 자바스크립트의 alert창
-//        @Override
-//        public boolean onJsAlert(WebView view, String url, String message, final JsResult result) {
-//            new AlertDialog.Builder(view.getContext())
-//                    .setTitle("Alert")
-//                    .setMessage(message)
-//                    .setPositiveButton(android.R.string.ok,
-//                            (dialog, which) -> result.confirm())
-//                    .setCancelable(false)
-//                    .create()
-//                    .show();
-//            return true;
-//        }
-//
-//        // 자바스크립트의 confirm창
-//        @Override
-//        public boolean onJsConfirm(WebView view, String url, String message,
-//                                   final JsResult result) {
-//            new AlertDialog.Builder(view.getContext())
-//                    .setTitle("Confirm")
-//                    .setMessage(message)
-//                    .setPositiveButton("Yes",
-//                            (dialog, which) -> result.confirm())
-//                    .setNegativeButton("No",
-//                            (dialog, which) -> result.cancel())
-//                    .setCancelable(false)
-//                    .create()
-//                    .show();
-//            return true;
-//        }
-//
-//        public boolean onShowFileChooser(
-//                WebView webView, ValueCallback<Uri[]> filePathCallback,
-//                FileChooserParams fileChooserParams) {
-//
-//            if (filePathCallbackLollipop != null) {
-//                filePathCallbackLollipop.onReceiveValue(null);
-//                filePathCallbackLollipop = null;
-//            }
-//            filePathCallbackLollipop = filePathCallback;
-//
-//            boolean isCapture = fileChooserParams.isCaptureEnabled();
-//
-//            runCamera(isCapture);
-//            return true;
-//        }
-//    }
-    // 리액트에서 window.BRIDGE.uploadPhoto() 호출
-    class WebBridge {
+    public class WebAppInterface {
         @JavascriptInterface
-        public void testAndroid() {
-            // 실행할 내용
+        public void vibrate(){
+            final Vibrator vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
+
+            if(Build.VERSION.SDK_INT >= 26){
+                vibrator.vibrate(VibrationEffect.createOneShot(vibrateTime, vibrateAmplitude));
+            }else{
+                vibrator.vibrate(vibrateTime);
+            }
         }
         @JavascriptInterface
-        public void uploadPhoto(){
-            Intent intent = new Intent();
-            intent.setType("image/*");
-            intent.setAction(Intent.ACTION_GET_CONTENT);
-            startActivityForResult(intent, 0);
+        public void copyToClipboard(String text) {
+            ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            ClipData clip = ClipData.newPlainText(getString(R.string.delgo), text);
+            clipboard.setPrimaryClip(clip);
+            Toast.makeText(getApplicationContext(), R.string.copied, Toast.LENGTH_SHORT).show();
+
         }
         @JavascriptInterface
-        public void setNotify(){
+        public void setNotify() {
+            // Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_BUBBLE_SETTINGS);
             Intent intent = new Intent(Settings.ACTION_APPLICATION_SETTINGS);
             startActivity(intent);
+        }
+        @JavascriptInterface
+        public void goToPlusFriends(){
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.url_plus_friend))));
         }
     }
 
 
     class WebClient extends WebViewClient {
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, String url) {
+            if (url.startsWith("tel:")) {
+                Intent dial = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                startActivity(dial);
+                return true;
+            }
+
+            Log.d("kakao", Uri.parse(url).toString());
+//            if (url.contains("@delgo")) {
+//                // url = "https://pf.kakao.com/_KGWQb";
+//                Intent intent = null;
+
+//                intent = getPackageManager().getLaunchIntentForPackage("com.kakao.talk");
+//                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//                startActivity(intent);
+
+//                startActivity(new Intent(ACTION_VIEW, Uri.parse(url)));
+//
+//                try {
+//                    if (intent.resolveActivity(packageManager) != null) {
+//                        startActivity(intent);
+//                        return true;
+//                    }
+//
+//                    return true;
+//                } catch (ActivityNotFoundException e) {
+//                    String fallbackUrl = intent.getStringExtra("browser_fallback_url");
+//                    if (fallbackUrl != null) {
+//                        view.loadUrl(fallbackUrl);
+//                        return true;
+//                    }
+//                }
+//                try {
+//                    // 실행 가능한 앱이 있으면 앱 실행
+//                    if (intent.resolveActivity(packageManager) != null) {
+//                        startActivity(intent);
+//                        return true;
+//                    }
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//
+//
+//                return true;
+//            }
+
+//            Log.d("kakaotalk", Uri.parse(url).getScheme());
+//
+            if (Uri.parse(url).getScheme().equals("https://")) {
+                Intent intent = null;
+                try {
+                    intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                } catch (URISyntaxException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    startActivity(new Intent(ACTION_VIEW, Uri.parse(url)));
+
+                    return true;
+                } catch (ActivityNotFoundException e) {
+                    String fallbackUrl = intent.getStringExtra("browser_fallback_url");
+                    if (fallbackUrl != null) {
+                        view.loadUrl(fallbackUrl);
+                        return true;
+                    }
+                }
+                try {
+                    // 실행 가능한 앱이 있으면 앱 실행
+                    if (intent.resolveActivity(packageManager) != null) {
+                        startActivity(intent);
+                        return true;
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if (!URLUtil.isNetworkUrl(url) && !URLUtil.isJavaScriptUrl(url)) {
+                final Uri uri;
+                try {
+                    uri = Uri.parse(url);
+                } catch (Exception e) {
+                    return false;
+                }
+
+                if ("intent".equals(uri.getScheme())) {
+                    return startSchemeIntentToss(url);
+                } else {
+                    try {
+                        webView.loadUrl(url);
+                        return true;
+                    } catch (Exception e) {
+                        return false;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private boolean startSchemeIntentToss(String url) {
+            final Intent schemeIntent;
+            try {
+                schemeIntent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+            } catch (URISyntaxException e) {
+                return false;
+            }
+
+            try {
+                startActivity(schemeIntent);
+                return true;
+            } catch (ActivityNotFoundException e) {
+                final String packageName = schemeIntent.getPackage();
+
+                if (!TextUtils.isEmpty(packageName)) {
+                    startActivity(new Intent(ACTION_VIEW, Uri.parse("market://details?id=" + packageName)));
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         @Override
         public void onPageFinished(WebView view, String url) {
             Handler handler = new Handler();
@@ -302,7 +345,33 @@ public class WebViewActivity extends AppCompatActivity {
             }, 500);
 
         }
+    }
 
+    class WebChromeClient extends android.webkit.WebChromeClient {
+        @Override
+        public void onPermissionRequest(PermissionRequest request) {
+            Log.d("bridge", "Permission request");
+            Log.d("bridge", request.getResources().toString());
+            request.grant(request.getResources());
+        }
+
+        @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+        @Override
+        public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, android.webkit.WebChromeClient.FileChooserParams fileChooserParams) {
+            /* 파일 업로드 */
+            if (mFilePathCallback != null) {
+                mFilePathCallback.onReceiveValue(null);
+                mFilePathCallback = null;
+            }
+            mFilePathCallback = filePathCallback;
+
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("image/*");
+            startActivityForResult(intent, 0);
+
+            return true;
+        }
     }
 
 }

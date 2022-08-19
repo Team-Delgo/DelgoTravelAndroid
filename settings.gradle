@@ -14,3 +14,5 @@ dependencyResolutionManagement {
 }
 rootProject.name = "DelgoAndroid"
 include ':app'
+include ':OcrEngine'
+include ':ocrview'
