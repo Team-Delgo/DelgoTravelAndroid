@@ -7,6 +7,6 @@
     <string name="set_permission">권한 설정</string>
     <string name="request_permission">앱 이용을 위해선 권한 허용이 필요합니다.</string>
     <string name="delgo">delgo</string>
-    <string name="url_plus_friend">https://pf.kakao.com/_KGWQb</string>
+    <string name="url_plus_friend">kakaoplus://plusfriend/friend/@delgo</string>
     <string name="copied">클립보드에 복사되었습니다.</string>
 </resources>

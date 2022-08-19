@@ -205,10 +205,17 @@ public class WebViewActivity extends AppCompatActivity {
             Intent intent = new Intent(Settings.ACTION_APPLICATION_SETTINGS);
             startActivity(intent);
         }
-        @JavascriptInterface
-        public void goToPlusFriends(){
-            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.url_plus_friend))));
-        }
+//        @JavascriptInterface
+//        public void goToPlusFriends(){
+//            Intent schemeIntent = null;
+//            try {
+//                Log.d("kakao", getString(R.string.url_plus_friend));
+//                schemeIntent = Intent.parseUri(getString(R.string.url_plus_friend), Intent.URI_INTENT_SCHEME);
+//            } catch (URISyntaxException e) {
+//                Log.d("kakao", "here");
+//            }
+//            startActivity(schemeIntent);
+//        }
     }
 
 
@@ -221,47 +228,19 @@ public class WebViewActivity extends AppCompatActivity {
                 return true;
             }
 
-            Log.d("kakao", Uri.parse(url).toString());
-//            if (url.contains("@delgo")) {
-//                // url = "https://pf.kakao.com/_KGWQb";
-//                Intent intent = null;
+            if(url.contains("kakao")){
+                Log.d("kakao", getString(R.string.url_plus_friend));
+                Intent schemeIntent = null;
+                try {
+                    Log.d("kakao", getString(R.string.url_plus_friend));
+                    schemeIntent = Intent.parseUri(getString(R.string.url_plus_friend), Intent.URI_INTENT_SCHEME);
+                } catch (URISyntaxException e) {
+                    Log.d("kakao", "here");
+                }
+                startActivity(schemeIntent);
+                return true;
+            }
 
-//                intent = getPackageManager().getLaunchIntentForPackage("com.kakao.talk");
-//                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//                startActivity(intent);
-
-//                startActivity(new Intent(ACTION_VIEW, Uri.parse(url)));
-//
-//                try {
-//                    if (intent.resolveActivity(packageManager) != null) {
-//                        startActivity(intent);
-//                        return true;
-//                    }
-//
-//                    return true;
-//                } catch (ActivityNotFoundException e) {
-//                    String fallbackUrl = intent.getStringExtra("browser_fallback_url");
-//                    if (fallbackUrl != null) {
-//                        view.loadUrl(fallbackUrl);
-//                        return true;
-//                    }
-//                }
-//                try {
-//                    // 실행 가능한 앱이 있으면 앱 실행
-//                    if (intent.resolveActivity(packageManager) != null) {
-//                        startActivity(intent);
-//                        return true;
-//                    }
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                }
-//
-//
-//                return true;
-//            }
-
-//            Log.d("kakaotalk", Uri.parse(url).getScheme());
-//
             if (Uri.parse(url).getScheme().equals("https://")) {
                 Intent intent = null;
                 try {
@@ -312,6 +291,8 @@ public class WebViewActivity extends AppCompatActivity {
             }
             return false;
         }
+
+
 
         private boolean startSchemeIntentToss(String url) {
             final Intent schemeIntent;
