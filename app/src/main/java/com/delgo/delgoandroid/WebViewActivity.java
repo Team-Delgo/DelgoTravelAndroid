@@ -228,19 +228,6 @@ public class WebViewActivity extends AppCompatActivity {
                 return true;
             }
 
-            if(url.contains("kakao")){
-                Log.d("kakao", getString(R.string.url_plus_friend));
-                Intent schemeIntent = null;
-                try {
-                    Log.d("kakao", getString(R.string.url_plus_friend));
-                    schemeIntent = Intent.parseUri(getString(R.string.url_plus_friend), Intent.URI_INTENT_SCHEME);
-                } catch (URISyntaxException e) {
-                    Log.d("kakao", "here");
-                }
-                startActivity(schemeIntent);
-                return true;
-            }
-
             if (Uri.parse(url).getScheme().equals("https://")) {
                 Intent intent = null;
                 try {
@@ -289,6 +276,20 @@ public class WebViewActivity extends AppCompatActivity {
                     }
                 }
             }
+
+            if(url.contains("kakaoplus")){
+                Log.d("kakao", getString(R.string.url_plus_friend));
+                Intent schemeIntent = null;
+                try {
+                    Log.d("kakao", getString(R.string.url_plus_friend));
+                    schemeIntent = Intent.parseUri(getString(R.string.url_plus_friend), Intent.URI_INTENT_SCHEME);
+                } catch (URISyntaxException e) {
+                    Log.d("kakao", "here");
+                }
+                startActivity(schemeIntent);
+                return true;
+            }
+
             return false;
         }
 
