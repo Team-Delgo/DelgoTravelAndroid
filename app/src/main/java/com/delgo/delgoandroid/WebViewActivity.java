@@ -205,17 +205,17 @@ public class WebViewActivity extends AppCompatActivity {
             Intent intent = new Intent(Settings.ACTION_APPLICATION_SETTINGS);
             startActivity(intent);
         }
-//        @JavascriptInterface
-//        public void goToPlusFriends(){
-//            Intent schemeIntent = null;
-//            try {
-//                Log.d("kakao", getString(R.string.url_plus_friend));
-//                schemeIntent = Intent.parseUri(getString(R.string.url_plus_friend), Intent.URI_INTENT_SCHEME);
-//            } catch (URISyntaxException e) {
-//                Log.d("kakao", "here");
-//            }
-//            startActivity(schemeIntent);
-//        }
+        @JavascriptInterface
+        public void goToPlusFriends(){
+            Intent schemeIntent = null;
+            try {
+                Log.d("kakao", getString(R.string.url_plus_friend));
+                schemeIntent = Intent.parseUri(getString(R.string.url_plus_friend), Intent.URI_INTENT_SCHEME);
+            } catch (URISyntaxException e) {
+                Log.d("kakao", "here");
+            }
+            startActivity(schemeIntent);
+        }
     }
 
 
@@ -229,6 +229,7 @@ public class WebViewActivity extends AppCompatActivity {
             }
 
             if (Uri.parse(url).getScheme().equals("https://")) {
+                Log.d("kakao", url);
                 Intent intent = null;
                 try {
                     intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
@@ -258,6 +259,7 @@ public class WebViewActivity extends AppCompatActivity {
             }
 
             if (!URLUtil.isNetworkUrl(url) && !URLUtil.isJavaScriptUrl(url)) {
+                Log.d("kakao", url);
                 final Uri uri;
                 try {
                     uri = Uri.parse(url);
@@ -275,19 +277,6 @@ public class WebViewActivity extends AppCompatActivity {
                         return false;
                     }
                 }
-            }
-
-            if(url.contains("kakaoplus")){
-                Log.d("kakao", getString(R.string.url_plus_friend));
-                Intent schemeIntent = null;
-                try {
-                    Log.d("kakao", getString(R.string.url_plus_friend));
-                    schemeIntent = Intent.parseUri(getString(R.string.url_plus_friend), Intent.URI_INTENT_SCHEME);
-                } catch (URISyntaxException e) {
-                    Log.d("kakao", "here");
-                }
-                startActivity(schemeIntent);
-                return true;
             }
 
             return false;
