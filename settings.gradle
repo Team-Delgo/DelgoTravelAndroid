@@ -10,6 +10,15 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven{
+            url "https://maven.google.com"
+            allowInsecureProtocol true
+        }
+        maven {
+            url 'https://devrepo.kakao.com/nexus/content/groups/public/'
+            allowInsecureProtocol true
+        }
+
     }
 }
 rootProject.name = "DelgoAndroid"

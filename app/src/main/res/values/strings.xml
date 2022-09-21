@@ -9,4 +9,5 @@
     <string name="delgo">delgo</string>
     <string name="url_plus_friend">kakaoplus://plusfriend/friend/@delgo</string>
     <string name="copied">클립보드에 복사되었습니다.</string>
+    <string name="kakao_app_key">d18065e53e0de1f75cdfe1b3a6aa7969</string>
 </resources>

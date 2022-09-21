@@ -9,7 +9,9 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.Signature;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -18,6 +20,7 @@ import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.webkit.JavascriptInterface;
@@ -35,7 +38,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.kakao.sdk.common.KakaoSdk;
+import com.kakao.sdk.user.UserApiClient;
+import com.kakao.sdk.user.model.Account;
+import com.kakao.sdk.user.model.User;
+
 import java.net.URISyntaxException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 public class WebViewActivity extends AppCompatActivity {
     private final static int FILECHOOSER_NORMAL_REQ_CODE = 0;
@@ -45,6 +55,7 @@ public class WebViewActivity extends AppCompatActivity {
     private long backBtnTime = 0;
     private int vibrateTime = 100;
     private int vibrateAmplitude = 30;
+    private final static String TAG = "my_dev";
 
 
     @Override
@@ -74,8 +85,8 @@ public class WebViewActivity extends AppCompatActivity {
         webView.addJavascriptInterface(new WebAppInterface(), "BRIDGE");
 
         webView.loadUrl("https://www.delgo.pet");
-
     }
+
 
     @Override
     public void onBackPressed() {
@@ -159,10 +170,11 @@ public class WebViewActivity extends AppCompatActivity {
             case FILECHOOSER_NORMAL_REQ_CODE:
                 //fileChooser 로 파일 선택 후 onActivityResult 에서 결과를 받아 처리함
                 if(resultCode == RESULT_OK) {
+                    Log.d("tmp", String.valueOf(data.getData()));
                     //파일 선택 완료 했을 경우
                     if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                         mFilePathCallback.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data));
-                    }else{
+                    } else{
                         mFilePathCallback.onReceiveValue(new Uri[]{data.getData()});
                     }
                     mFilePathCallback = null;
@@ -205,61 +217,99 @@ public class WebViewActivity extends AppCompatActivity {
             Intent intent = new Intent(Settings.ACTION_APPLICATION_SETTINGS);
             startActivity(intent);
         }
+//        @JavascriptInterface
+//        public void goToKakaoLogin(){
+//            UserApiClient.getInstance().loginWithKakaoTalk(WebViewActivity.this,(oAuthToken, error) -> {
+//                if (error != null) {
+//                    Log.e(TAG, "로그인 실패", error);
+//                } else if (oAuthToken != null) {
+//                    Log.i(TAG, "로그인 성공(토큰) : " + oAuthToken.getAccessToken());
+//                }
+//                return null;
+//            });
+//        }
         @JavascriptInterface
         public void goToPlusFriends(){
             Intent schemeIntent = null;
             try {
-                Log.d("kakao", getString(R.string.url_plus_friend));
+                Log.d(TAG, getString(R.string.url_plus_friend));
                 schemeIntent = Intent.parseUri(getString(R.string.url_plus_friend), Intent.URI_INTENT_SCHEME);
             } catch (URISyntaxException e) {
-                Log.d("kakao", "here");
+                Log.d(TAG, "here");
             }
             startActivity(schemeIntent);
         }
+    }
+
+    public void login(){
+        UserApiClient.getInstance().loginWithKakaoTalk(WebViewActivity.this,(oAuthToken, error) -> {
+            if (error != null) {
+                Log.e(TAG, "로그인 실패", error);
+            } else if (oAuthToken != null) {
+                Log.i(TAG, "로그인 성공(토큰) : " + oAuthToken.getAccessToken());
+                getUserInfo();
+            }
+            return null;
+        });
+    }
+
+    public void accountLogin(){
+        UserApiClient.getInstance().loginWithKakaoAccount(WebViewActivity.this,(oAuthToken, error) -> {
+            if (error != null) {
+                Log.e(TAG, "로그인 실패", error);
+            } else if (oAuthToken != null) {
+                Log.i(TAG, "로그인 성공(토큰) : " + oAuthToken.getAccessToken());
+                getUserInfo();
+            }
+            return null;
+        });
+    }
+
+    public void getUserInfo(){
+        String TAG = "getUserInfo()";
+        UserApiClient.getInstance().me((user, meError) -> {
+            if (meError != null) {
+                Log.e(TAG, "사용자 정보 요청 실패", meError);
+            } else {
+                System.out.println("로그인 완료");
+                Log.i(TAG, user.toString());
+                {
+                    Log.i(TAG, "사용자 정보 요청 성공" +
+                            "\n회원번호: "+user.getId() +
+                            "\n이메일: "+user.getKakaoAccount().getEmail());
+                }
+                Account user1 = user.getKakaoAccount();
+                System.out.println("사용자 계정" + user1);
+            }
+            return null;
+        });
     }
 
 
     class WebClient extends WebViewClient {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
+            Log.d(TAG, url);
+
             if (url.startsWith("tel:")) {
                 Intent dial = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                 startActivity(dial);
                 return true;
             }
 
-            if (Uri.parse(url).getScheme().equals("https://")) {
-                Log.d("kakao", url);
-                Intent intent = null;
-                try {
-                    intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
-                } catch (URISyntaxException e) {
-                    e.printStackTrace();
+            if(url.startsWith("https://kauth.kakao.com")){
+                if(UserApiClient.getInstance().isKakaoTalkLoginAvailable(WebViewActivity.this)){
+                    Log.d(TAG, "true");
+                    login();
                 }
-                try {
-                    startActivity(new Intent(ACTION_VIEW, Uri.parse(url)));
-
-                    return true;
-                } catch (ActivityNotFoundException e) {
-                    String fallbackUrl = intent.getStringExtra("browser_fallback_url");
-                    if (fallbackUrl != null) {
-                        view.loadUrl(fallbackUrl);
-                        return true;
-                    }
-                }
-                try {
-                    // 실행 가능한 앱이 있으면 앱 실행
-                    if (intent.resolveActivity(packageManager) != null) {
-                        startActivity(intent);
-                        return true;
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
+                else{
+                    Log.d(TAG, "false");
+                    accountLogin();
                 }
             }
 
             if (!URLUtil.isNetworkUrl(url) && !URLUtil.isJavaScriptUrl(url)) {
-                Log.d("kakao", url);
+
                 final Uri uri;
                 try {
                     uri = Uri.parse(url);
@@ -271,7 +321,7 @@ public class WebViewActivity extends AppCompatActivity {
                     return startSchemeIntentToss(url);
                 } else {
                     try {
-                        webView.loadUrl(url);
+                        // webView.loadUrl(url);
                         return true;
                     } catch (Exception e) {
                         return false;
@@ -321,8 +371,8 @@ public class WebViewActivity extends AppCompatActivity {
     class WebChromeClient extends android.webkit.WebChromeClient {
         @Override
         public void onPermissionRequest(PermissionRequest request) {
-            Log.d("bridge", "Permission request");
-            Log.d("bridge", request.getResources().toString());
+            Log.d(TAG, "Permission request");
+            Log.d(TAG, request.getResources().toString());
             request.grant(request.getResources());
         }
 
@@ -339,6 +389,7 @@ public class WebViewActivity extends AppCompatActivity {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("image/*");
+
             startActivityForResult(intent, 0);
 
             return true;
