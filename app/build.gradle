@@ -38,5 +38,6 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
     implementation "com.kakao.sdk:v2-user:2.11.0"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.5.0"
+    implementation 'io.github.muddz:styleabletoast:2.4.0'
 
 }

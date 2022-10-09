@@ -3,6 +3,7 @@ package com.delgo.delgoandroid;
 import static android.content.Intent.ACTION_VIEW;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
@@ -12,6 +13,7 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -47,6 +49,8 @@ import java.net.URISyntaxException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import io.github.muddz.styleabletoast.StyleableToast;
+
 public class WebViewActivity extends AppCompatActivity {
     private final static int FILECHOOSER_NORMAL_REQ_CODE = 0;
     private WebView webView = null;
@@ -58,6 +62,7 @@ public class WebViewActivity extends AppCompatActivity {
     private final static String TAG = "my_dev";
 
 
+    @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -195,14 +200,28 @@ public class WebViewActivity extends AppCompatActivity {
     public class WebAppInterface {
         @JavascriptInterface
         public void vibrate(){
+            Log.d(TAG, "vibrate");
             final Vibrator vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
 
             if(Build.VERSION.SDK_INT >= 26){
                 vibrator.vibrate(VibrationEffect.createOneShot(vibrateTime, vibrateAmplitude));
+
             }else{
                 vibrator.vibrate(vibrateTime);
             }
+//            Toast.makeText(WebViewActivity.this, "찜 목록에 저장되었습니다.", Toast.LENGTH_SHORT).show();
+            StyleableToast.makeText(WebViewActivity.this, getString(R.string.saveWishList), R.style.wishlist).show();
         }
+
+        @JavascriptInterface
+        public void saveWishList(){
+            Log.d(TAG, "saveWishList");
+
+            Toast.makeText(WebViewActivity.this, R.string.on_back_pressed, Toast.LENGTH_SHORT).show();
+
+
+        }
+
         @JavascriptInterface
         public void copyToClipboard(String text) {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
@@ -361,7 +380,7 @@ public class WebViewActivity extends AppCompatActivity {
         public void onPageFinished(WebView view, String url) {
             Handler handler = new Handler();
             handler.postDelayed(() -> {
-                findViewById(R.id.loading).setVisibility(View.GONE);
+//                findViewById(R.id.loading).setVisibility(View.GONE);
                 findViewById(R.id.webView).setVisibility(View.VISIBLE);
             }, 500);
 

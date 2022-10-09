@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="wishlist">
+        <item name="stTextBold">true</item>
+        <item name="stTextColor">@color/black</item>
+        <item name="stTextSize">14sp</item>
+        <item name="stColorBackground">#E5E5E5</item>
+<!--        <item name="stStrokeWidth">3dp</item>-->
+<!--        <item name="stStrokeColor">#fff</item>-->
+        <item name="stIconStart">@drawable/heart</item>
+<!--        <item name="stIconEnd">@drawable/favorite</item>-->
+        <item name="stLength">SHORT</item> LONG or SHORT
+        <item name="stRadius">20dp</item>
+    </style>
+</resources>
