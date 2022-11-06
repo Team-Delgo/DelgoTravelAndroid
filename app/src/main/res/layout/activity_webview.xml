@@ -21,6 +21,9 @@
         android:id="@+id/webView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:screenOrientation="portrait"
+        android:windowSoftInputMode="adjustResize"
+        android:configChanges="keyboardHidden|orientation|screenSize"
         android:visibility="gone" />
 
 </LinearLayout>
